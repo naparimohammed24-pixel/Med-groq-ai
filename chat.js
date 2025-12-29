@@ -1,40 +1,34 @@
 import Groq from "groq-sdk";
 
-export const config = {
-  runtime: "edge"
-};
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return res.status(405).send("Method not allowed");
   }
 
-  const { messages } = await req.json();
+  try {
+    const { messages } = req.body;
 
-  const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-  });
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY
+    });
 
-  const stream = await groq.chat.completions.create({
-    model: "openai/gpt-oss-120b",
-    messages,
-    temperature: 1,
-    stream: true
-  });
+    const stream = await groq.chat.completions.create({
+      model: "openai/gpt-oss-120b",
+      messages,
+      temperature: 1,
+      stream: true
+    });
 
-  const encoder = new TextEncoder();
+    res.setHeader("Content-Type", "text/plain");
 
-  const readableStream = new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content || "";
-        controller.enqueue(encoder.encode(text));
-      }
-      controller.close();
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content || "";
+      res.write(text); // send chunks as they arrive
     }
-  });
 
-  return new Response(readableStream, {
-    headers: { "Content-Type": "text/plain" }
-  });
+    res.end();
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 }
