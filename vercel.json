@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/chat.js": {
+    "chat.js": {
       "runtime": "@vercel/node@18"
     }
   }
