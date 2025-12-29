@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Groq AI Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{background:#0b1020;color:white;font-family:Arial;padding:15px}
+#chat{background:#141a2b;padding:10px;border-radius:6px;min-height:200px;white-space:pre-wrap}
+textarea{width:100%;height:70px;margin-top:10px}
+button{padding:10px 15px;margin-top:10px;background:#4f7cff;border:none;color:white;border-radius:5px}
+</style>
+</head>
+<body>
+
+<h2>Groq AI Chat</h2>
+<div id="chat"></div>
+
+<textarea id="input" placeholder="Type your message..."></textarea>
+<br>
+<button onclick="send()">Send</button>
+
+<script>
+async function send() {
+  const input = document.getElementById("input");
+  const chat = document.getElementById("chat");
+
+  const userMessage = input.value;
+  input.value = "";
+
+  chat.textContent += "\n\nYou: " + userMessage + "\nAI: ";
+
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [{ role: "user", content: userMessage }]
+    })
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chat.textContent += decoder.decode(value);
+  }
+}
+</script>
+
+</body>
+</html>
